@@ -18,3 +18,13 @@ You only need a public key to encrypt files, though you need both the public and
 [4 bytes] Chunk Size (int32, big endian)
 [...]     Encrypted Data, exactly chunk size + 48 until end of file. The final chunk may be smaller than the chunk size.
 ```
+
+## Verified Compatibility
+
+**encrypt-nacl** and **decrypt-nacl** commands:
+- C#
+  - [ASP.Net Sodium.Core](https://www.nuget.org/packages/Sodium.Core/) (Sodium.SealedPublicKeyBox API)
+
+**encrypt-file** and **decrypt-file** commands:
+
+Nothing!
