@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/masquernya/go-encryption-program/encryption"
-	"io"
+	"github.com/masquernya/go-encryption-program/ferret"
 	"os"
 )
 
@@ -42,39 +42,13 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
-		file, err := os.Open(os.Args[3])
+		inFilePath := os.Args[3]
+		outFilePath := inFilePath + ".enc"
+		err = ferret.EncryptFile(inFilePath, outFilePath, publicKey)
 		if err != nil {
 			panic(err)
 		}
-		defer file.Close()
-
-		stat, err := file.Stat()
-		if err != nil {
-			panic(err)
-		}
-		bufferSize := 1024 * 16
-		fileSize := stat.Size()
-		// Max buffer size 128MB
-		if fileSize >= 1024*1024*128 {
-			bufferSize = 1024 * 1024 * 128
-		} else {
-			bufferSize = int(fileSize)
-		}
-		savePath := os.Args[3] + ".enc"
-		saveFile, err := os.OpenFile(savePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if err != nil {
-			panic(err)
-		}
-		defer saveFile.Close()
-
-		encryptor := encryption.NewEncryptReaderWithBufferSize(publicKey, file, bufferSize)
-		_, err = io.Copy(saveFile, encryptor)
-		if err != nil {
-			panic(err)
-			return
-		}
-		fmt.Println("File encrypted and saved to " + savePath)
+		fmt.Println("File encrypted and saved to " + outFilePath)
 	} else if os.Args[1] == "decrypt" {
 		if len(os.Args) < 4 {
 			printHelp()
@@ -93,24 +67,14 @@ func main() {
 			panic(err)
 		}
 
-		file, err := os.Open(os.Args[3])
-		if err != nil {
-			panic(err)
-		}
-		defer file.Close()
+		inFilePath := os.Args[3]
+		outFilePath := inFilePath + ".dec"
 
-		outPath := os.Args[3] + ".dec"
-		outFile, err := os.OpenFile(outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		err = ferret.DecryptFile(inFilePath, outFilePath, publicKey, privateKey)
 		if err != nil {
 			panic(err)
 		}
-
-		decryptor := encryption.NewDecryptReader(publicKey, privateKey, file)
-		_, err = io.Copy(outFile, decryptor)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("File decrypted and saved to " + outPath)
+		fmt.Println("File decrypted and saved to " + outFilePath)
 	} else {
 		printHelp()
 	}
