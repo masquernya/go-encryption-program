@@ -121,7 +121,9 @@ func readAtLeastOrEof(r io.Reader, dest []byte) (int, error) {
 func (s *StreamDecryption) Read(p []byte) (int, error) {
 	if !s.didReadHeader {
 		s.buff = make([]byte, 4+len(MagicBytesVersion1))
-		readAtLeastOrEof(s.DataProvider, s.buff)
+		if _, err := readAtLeastOrEof(s.DataProvider, s.buff); err != nil {
+			return 0, errors.New("error reading header: " + err.Error())
+		}
 		if string(s.buff[:len(MagicBytesVersion1)]) != MagicBytesVersion1 {
 			return 0, errors.New("invalid encryption header")
 		}
