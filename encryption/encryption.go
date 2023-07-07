@@ -51,14 +51,16 @@ func (s *StreamEncryption) Read(p []byte) (int, error) {
 	if s.unencryptedBuff == nil {
 		s.unencryptedBuff = make([]byte, s.bufferSize)
 	}
-	toEncryptLen := readAtLeastOrEof(s.DataProvider, s.unencryptedBuff)
+	toEncryptLen, err := readAtLeastOrEof(s.DataProvider, s.unencryptedBuff)
+	if err != nil {
+		return 0, err
+	}
 	if toEncryptLen == 0 {
 		return 0, io.EOF
 	}
 	if toEncryptLen < s.bufferSize {
 		s.unencryptedBuff = s.unencryptedBuff[0:toEncryptLen]
 	}
-	var err error
 	s.buff, err = box.SealAnonymous(nil, s.unencryptedBuff[:toEncryptLen], (*[32]byte)(s.publicKey), crypto_ran.Reader)
 	if err != nil {
 		return 0, err
@@ -99,19 +101,19 @@ type StreamDecryption struct {
 	didReadHeader bool
 }
 
-func readAtLeastOrEof(r io.Reader, dest []byte) int {
+func readAtLeastOrEof(r io.Reader, dest []byte) (int, error) {
 	totalN := 0
 	for {
 		n, err := r.Read(dest[totalN:])
 		totalN += n
 		if err == io.EOF {
-			return totalN
+			return totalN, nil
 		}
 		if err != nil {
-			panic(err)
+			return 0, err
 		}
 		if totalN >= len(dest) {
-			return totalN
+			return totalN, nil
 		}
 	}
 }
@@ -140,7 +142,10 @@ func (s *StreamDecryption) Read(p []byte) (int, error) {
 	if s.encryptedBuff == nil {
 		s.encryptedBuff = make([]byte, s.bufferSize+box.AnonymousOverhead)
 	}
-	toEncryptLen := readAtLeastOrEof(s.DataProvider, s.encryptedBuff)
+	toEncryptLen, err := readAtLeastOrEof(s.DataProvider, s.encryptedBuff)
+	if err != nil {
+		return 0, err
+	}
 	if toEncryptLen == 0 {
 		return 0, io.EOF
 	}
