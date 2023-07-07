@@ -21,7 +21,7 @@ func GenerateKeys() ([]byte, []byte, error) {
 	return publicKey[:], privateKey[:], nil
 }
 
-const defaultBufferSize int = 1024 * 16 // 128mb
+const defaultBufferSize int = 1024 * 16 // 16kb
 type StreamEncryption struct {
 	DataProvider io.Reader
 
