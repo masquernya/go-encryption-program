@@ -47,7 +47,7 @@ func (s *StreamDecryption) Read(p []byte) (int, error) {
 			return 0, errors.New("invalid encryption header")
 		}
 		s.bufferSize = int(binary.BigEndian.Uint32(s.buff[len(MagicBytesVersion1):]))
-		if s.bufferSize < 1024 || s.bufferSize > 1024*1024*1024 {
+		if s.bufferSize < 1 || s.bufferSize > 1024*1024*1024 {
 			return 0, errors.New("invalid decryption buffer size: " + strconv.Itoa(s.bufferSize))
 		}
 		s.didReadHeader = true
