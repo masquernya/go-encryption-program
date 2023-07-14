@@ -104,10 +104,9 @@ func (s *StreamDecryption) Read(p []byte) (int, error) {
 	if toDecryptLen < s.bufferSize {
 		s.encryptedBuff = s.encryptedBuff[0:toDecryptLen]
 	}
-	var ok bool
-	s.buff, ok = box.OpenAnonymous(nil, s.encryptedBuff, (*[32]byte)(s.publicKey), (*[32]byte)(s.privateKey))
-	if !ok {
-		return 0, errors.New("decryption failed")
+	s.buff, err = DecryptWithPublicKey(s.publicKey, s.privateKey, s.encryptedBuff)
+	if err != nil {
+		return 0, err
 	}
 	n := copy(p, s.buff[s.i:])
 	s.i += n

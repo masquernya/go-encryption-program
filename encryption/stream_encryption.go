@@ -1,9 +1,7 @@
 package encryption
 
 import (
-	crypto_ran "crypto/rand"
 	"encoding/binary"
-	"golang.org/x/crypto/nacl/box"
 	"io"
 )
 
@@ -46,7 +44,7 @@ func (s *StreamEncryption) Read(p []byte) (int, error) {
 	if toEncryptLen < s.bufferSize {
 		s.unencryptedBuff = s.unencryptedBuff[0:toEncryptLen]
 	}
-	s.buff, err = box.SealAnonymous(nil, s.unencryptedBuff[:toEncryptLen], (*[32]byte)(s.publicKey), crypto_ran.Reader)
+	s.buff, err = Encrypt(s.publicKey, s.unencryptedBuff[:toEncryptLen])
 	if err != nil {
 		return 0, err
 	}
