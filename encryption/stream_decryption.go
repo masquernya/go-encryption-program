@@ -38,21 +38,37 @@ func readAtLeastOrEof(r io.Reader, dest []byte) (int, error) {
 	}
 }
 
+func (s *StreamDecryption) readHeader() error {
+	s.buff = make([]byte, 4+len(MagicBytesVersion1))
+	if _, err := readAtLeastOrEof(s.DataProvider, s.buff); err != nil {
+		return errors.New("error reading header: " + err.Error())
+	}
+	if string(s.buff[:len(MagicBytesVersion1)]) != MagicBytesVersion1 {
+		return errors.New("invalid encryption header")
+	}
+	s.bufferSize = int(binary.BigEndian.Uint32(s.buff[len(MagicBytesVersion1):]))
+	if s.bufferSize < 1 || s.bufferSize > 1024*1024*1024 {
+		return errors.New("invalid decryption buffer size: " + strconv.Itoa(s.bufferSize))
+	}
+	s.buff = nil
+	return nil
+}
+
 func (s *StreamDecryption) Read(p []byte) (int, error) {
+	if s.publicKey == nil {
+		// get public key from private key
+		keyData, err := ecdh.X25519().NewPrivateKey(s.privateKey)
+		if err != nil {
+			return 0, err
+		}
+		s.publicKey = keyData.PublicKey().Bytes()
+	}
+
 	if !s.didReadHeader {
-		s.buff = make([]byte, 4+len(MagicBytesVersion1))
-		if _, err := readAtLeastOrEof(s.DataProvider, s.buff); err != nil {
-			return 0, errors.New("error reading header: " + err.Error())
-		}
-		if string(s.buff[:len(MagicBytesVersion1)]) != MagicBytesVersion1 {
-			return 0, errors.New("invalid encryption header")
-		}
-		s.bufferSize = int(binary.BigEndian.Uint32(s.buff[len(MagicBytesVersion1):]))
-		if s.bufferSize < 1 || s.bufferSize > 1024*1024*1024 {
-			return 0, errors.New("invalid decryption buffer size: " + strconv.Itoa(s.bufferSize))
+		if err := s.readHeader(); err != nil {
+			return 0, err
 		}
 		s.didReadHeader = true
-		s.buff = nil
 	}
 	if len(s.buff) != 0 && len(s.buff) > s.i {
 		n := copy(p, s.buff[s.i:])
@@ -85,16 +101,8 @@ func (s *StreamDecryption) Read(p []byte) (int, error) {
 }
 
 func NewDecryptReader(privateKey []byte, data io.Reader) io.Reader {
-	// get public key from private key
-	keyData, err := ecdh.X25519().NewPrivateKey(privateKey)
-	if err != nil {
-		panic(err)
-	}
-	publicKey := keyData.PublicKey().Bytes()
-
 	s := &StreamDecryption{
 		DataProvider: data,
-		publicKey:    publicKey,
 		privateKey:   privateKey,
 	}
 	return s
