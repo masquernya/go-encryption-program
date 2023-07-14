@@ -73,7 +73,7 @@ func TestEncryptReaderFile(t *testing.T) {
 	maxMemoryBytes += int(stat.Size() / 8)
 
 	encrypted := NewEncryptReaderWithBufferSize(publicKey, file, 1024*1024*128)
-	decrypted := NewDecryptReader(publicKey, privateKey, encrypted) // Feed encrypted straight into decrypted.
+	decrypted := NewDecryptReader(privateKey, encrypted) // Feed encrypted straight into decrypted.
 
 	var encryptedSize = 0
 	lastPrint := time.Now()
@@ -128,7 +128,7 @@ func TestEncryptReader(t *testing.T) {
 	}
 
 	encryptedReader := bytes.NewReader(data)
-	decryptedBytes := NewDecryptReader(publicKey, privateKey, encryptedReader)
+	decryptedBytes := NewDecryptReader(privateKey, encryptedReader)
 	decryptedData, err := io.ReadAll(decryptedBytes)
 	if err != nil {
 		t.Fatal(err)
