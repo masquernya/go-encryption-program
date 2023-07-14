@@ -42,7 +42,7 @@ func EncryptFile(inFilePath string, outFilePath string, publicKey []byte) error 
 }
 
 // DecryptFile decrypts the inFilePath to outFilePath using the privateKey, truncating outFilePath if it exists.
-func DecryptFile(inFilePath string, outFilePath string, publicKey []byte, privateKey []byte) error {
+func DecryptFile(inFilePath string, outFilePath string, privateKey []byte) error {
 	file, err := os.Open(inFilePath)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func DecryptFile(inFilePath string, outFilePath string, publicKey []byte, privat
 		return err
 	}
 
-	decryptor := encryption.NewDecryptReader(publicKey, privateKey, file)
+	decryptor := encryption.NewDecryptReader(privateKey, file)
 	_, err = io.Copy(outFile, decryptor)
 	if err != nil {
 		return err

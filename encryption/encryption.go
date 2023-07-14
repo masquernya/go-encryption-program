@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"crypto/ecdh"
 	crypto_ran "crypto/rand"
 	"errors"
 	"golang.org/x/crypto/nacl/box"
@@ -30,7 +31,14 @@ func Encrypt(publicKey []byte, plainText []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts the encryptedData using privateKey and returns the plain text.
-func Decrypt(publicKey []byte, privateKey []byte, encryptedData []byte) ([]byte, error) {
+func Decrypt(privateKey []byte, encryptedData []byte) ([]byte, error) {
+	// get public key from private key
+	keyData, err := ecdh.X25519().NewPrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
+	publicKey := keyData.PublicKey().Bytes()
+
 	data, ok := box.OpenAnonymous(nil, encryptedData, (*[32]byte)(publicKey), (*[32]byte)(privateKey))
 	if !ok {
 		return nil, errors.New("decryption failed")

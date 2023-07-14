@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"crypto/ecdh"
 	"encoding/binary"
 	"errors"
 	"golang.org/x/crypto/nacl/box"
@@ -83,7 +84,14 @@ func (s *StreamDecryption) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-func NewDecryptReader(publicKey []byte, privateKey []byte, data io.Reader) io.Reader {
+func NewDecryptReader(privateKey []byte, data io.Reader) io.Reader {
+	// get public key from private key
+	keyData, err := ecdh.X25519().NewPrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
+	publicKey := keyData.PublicKey().Bytes()
+
 	s := &StreamDecryption{
 		DataProvider: data,
 		publicKey:    publicKey,

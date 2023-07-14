@@ -24,7 +24,7 @@ var commands = map[string]struct {
 		Description: "encrypt file with public key, saving to <filepath>.enc",
 	},
 	"decrypt-file": {
-		Arguments:   []string{"<publickey>", "<filepath>"},
+		Arguments:   []string{"<filepath>"},
 		Description: "decrypt file, saving to <filepath>.dec. private key is read from the PRIVATE_KEY environmental variable.",
 	},
 	"genkey": {
@@ -32,7 +32,7 @@ var commands = map[string]struct {
 		Description: "generate public and private key, then print it to the terminal",
 	},
 	"decrypt-nacl": {
-		Arguments:   []string{"<publickey>", "<message>"},
+		Arguments:   []string{"<message>"},
 		Description: "decrypt anonymous nacl box message (Base64 encoded) and print it to the terminal. private key is read from the PRIVATE_KEY environmental variable.",
 	},
 	"encrypt-nacl": {
@@ -92,12 +92,8 @@ func main() {
 		}
 		fmt.Println("File encrypted and saved to " + outFilePath)
 	} else if os.Args[1] == "decrypt-file" {
-		if len(os.Args) < 4 {
+		if len(os.Args) < 3 {
 			printHelp()
-		}
-		publicKey, err := base64.StdEncoding.DecodeString(os.Args[2])
-		if err != nil {
-			panic(err)
 		}
 		privateKeyStr, privateKeyExists := os.LookupEnv("PRIVATE_KEY")
 		if !privateKeyExists {
@@ -109,10 +105,10 @@ func main() {
 			panic(err)
 		}
 
-		inFilePath := os.Args[3]
+		inFilePath := os.Args[2]
 		outFilePath := inFilePath + ".dec"
 
-		err = ferret.DecryptFile(inFilePath, outFilePath, publicKey, privateKey)
+		err = ferret.DecryptFile(inFilePath, outFilePath, privateKey)
 		if err != nil {
 			panic(err)
 		}
@@ -135,12 +131,8 @@ func main() {
 		fmt.Println(base64.StdEncoding.EncodeToString(encrypted))
 
 	} else if os.Args[1] == "decrypt-nacl" {
-		if len(os.Args) < 4 {
+		if len(os.Args) < 3 {
 			printHelp()
-		}
-		publicKey, err := base64.StdEncoding.DecodeString(os.Args[2])
-		if err != nil {
-			panic(err)
 		}
 		privateKeyStr, privateKeyExists := os.LookupEnv("PRIVATE_KEY")
 		if !privateKeyExists {
@@ -152,12 +144,12 @@ func main() {
 			panic(err)
 		}
 
-		message, err := base64.StdEncoding.DecodeString(os.Args[3])
+		message, err := base64.StdEncoding.DecodeString(os.Args[2])
 		if err != nil {
 			panic(err)
 		}
 
-		decrypted, err := encryption.Decrypt(publicKey, privateKey, message)
+		decrypted, err := encryption.Decrypt(privateKey, message)
 		if err != nil {
 			panic(err)
 		}
