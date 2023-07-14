@@ -38,7 +38,12 @@ func Decrypt(privateKey []byte, encryptedData []byte) ([]byte, error) {
 		panic(err)
 	}
 	publicKey := keyData.PublicKey().Bytes()
+	// decrypt
+	return DecryptWithPublicKey(publicKey, privateKey, encryptedData)
+}
 
+// DecryptWithPublicKey decrypts the encryptedData using the publicKey/privateKey pair and returns the plain text. The publicKey and privateKey must both belong to the recipient - this method only decrypts anonymous messages. You probably want to use Decrypt instead, unless you know what you're doing.
+func DecryptWithPublicKey(publicKey []byte, privateKey []byte, encryptedData []byte) ([]byte, error) {
 	data, ok := box.OpenAnonymous(nil, encryptedData, (*[32]byte)(publicKey), (*[32]byte)(privateKey))
 	if !ok {
 		return nil, errors.New("decryption failed")
