@@ -123,7 +123,7 @@ func main() {
 		}
 		message := os.Args[3]
 
-		encrypted, err := encryption.Encrypt(publicKey, []byte(message))
+		encrypted, err := encryption.PublicKeyEncrypt(publicKey, []byte(message))
 		if err != nil {
 			panic(err)
 		}
@@ -149,7 +149,7 @@ func main() {
 			panic(err)
 		}
 
-		decrypted, err := encryption.Decrypt(privateKey, message)
+		decrypted, err := encryption.PublicKeyDecrypt(privateKey, message)
 		if err != nil {
 			panic(err)
 		}
