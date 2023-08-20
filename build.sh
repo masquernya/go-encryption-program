@@ -1,0 +1,1 @@
+go build && cp ./go-encryption-program ~/.local/bin/masq
