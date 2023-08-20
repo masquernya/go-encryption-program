@@ -44,7 +44,7 @@ func (s *StreamEncryption) Read(p []byte) (int, error) {
 	if toEncryptLen < s.bufferSize {
 		s.unencryptedBuff = s.unencryptedBuff[0:toEncryptLen]
 	}
-	s.buff, err = Encrypt(s.publicKey, s.unencryptedBuff[:toEncryptLen])
+	s.buff, err = PublicKeyEncrypt(s.publicKey, s.unencryptedBuff[:toEncryptLen])
 	if err != nil {
 		return 0, err
 	}
