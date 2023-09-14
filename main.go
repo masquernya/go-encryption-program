@@ -160,7 +160,6 @@ func main() {
 			fmt.Println(base64.StdEncoding.EncodeToString(decrypted))
 			os.Exit(0)
 		}
-		fmt.Println("Message:")
 		fmt.Println(string(decrypted))
 	} else if os.Args[1] == "humanize-key" {
 		if len(os.Args) < 3 {
