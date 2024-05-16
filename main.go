@@ -7,7 +7,10 @@ import (
 	"github.com/masquernya/go-encryption-program/ferret"
 	"github.com/masquernya/go-encryption-program/humanize"
 	"os"
+	"runtime"
+	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -29,7 +32,11 @@ var commands = map[string]struct {
 	},
 	"genkey": {
 		Arguments:   []string{},
-		Description: "generate public and private key, then print it to the terminal",
+		Description: "generate public and private key, then print it to the terminal.",
+	},
+	"genkeyword": {
+		Arguments:   []string{"<mode>", "<case sensitive>", "<word>"},
+		Description: "generate public and private key with <word>, then print it to the terminal. <case sensitive> is true or false. <mode> is prefix or any",
 	},
 	"decrypt-nacl": {
 		Arguments:   []string{"<message>"},
@@ -75,6 +82,89 @@ func main() {
 		fmt.Println(base64.StdEncoding.EncodeToString(publicKey))
 		fmt.Println("Private Key (Base64):")
 		fmt.Println(base64.StdEncoding.EncodeToString(privateKey))
+		os.Exit(0)
+	} else if os.Args[1] == "genkeyword" {
+		if len(os.Args) < 5 {
+			printHelp()
+		}
+		mode := os.Args[2]
+		caseSensitive, err := strconv.ParseBool(os.Args[3])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		prefix := os.Args[4]
+		if !caseSensitive {
+			prefix = strings.ToLower(prefix)
+		}
+		ch := make(chan [][]byte)
+		//var attempts int64 = 0
+		//var attemptsMux sync.Mutex
+		start := time.Now()
+		threadCount := runtime.NumCPU()
+		for i := 0; i < threadCount; i++ {
+			go (func() {
+				var myPublicKey []byte
+				var myPrivateKey []byte
+				var err error
+				for {
+					myPublicKey, myPrivateKey, err = encryption.GenerateKeys()
+					if err != nil {
+						fmt.Println(err)
+						os.Exit(1)
+					}
+
+					if mode == "prefix" {
+						kb64 := base64.StdEncoding.EncodeToString(myPublicKey[0:len(prefix)])
+						if !caseSensitive {
+							kb64 = strings.ToLower(kb64)
+						}
+
+						if strings.HasPrefix(kb64, prefix) {
+							fmt.Println("took", time.Since(start))
+							s := strings.Repeat("^", len(prefix))
+							ch <- [][]byte{myPublicKey, myPrivateKey, []byte(s)}
+						}
+					} else if mode == "suffix" {
+						kb64 := base64.StdEncoding.EncodeToString(myPublicKey)
+						if !caseSensitive {
+							kb64 = strings.ToLower(kb64)
+						}
+
+						for strings.HasSuffix(kb64, "=") {
+							kb64 = kb64[:len(kb64)-1]
+						}
+						if strings.HasSuffix(kb64, prefix) {
+							fmt.Println("took", time.Since(start))
+							s := strings.Repeat(" ", len(kb64)-len(prefix))
+							s += strings.Repeat("^", len(prefix))
+							ch <- [][]byte{myPublicKey, myPrivateKey, []byte(s)}
+						}
+					} else if mode == "any" {
+						kb64 := base64.StdEncoding.EncodeToString(myPublicKey)
+						if !caseSensitive {
+							kb64 = strings.ToLower(kb64)
+						}
+						pos := strings.Index(kb64, prefix)
+						if pos != -1 {
+							strLocation := strings.Repeat(" ", pos)
+							strLocation += strings.Repeat("^", utf8.RuneCountInString(prefix))
+							fmt.Println("took", time.Since(start))
+							ch <- [][]byte{myPublicKey, myPrivateKey, []byte(strLocation)}
+							break
+						}
+					} else {
+						panic("invalid mode")
+					}
+				}
+			})()
+		}
+		keys := <-ch
+		fmt.Println("Public Key (Base64):")
+		fmt.Println(base64.StdEncoding.EncodeToString(keys[0]))
+		fmt.Println(string(keys[2]))
+		fmt.Println("Private Key (Base64):")
+		fmt.Println(base64.StdEncoding.EncodeToString(keys[1]))
 		os.Exit(0)
 	} else if os.Args[1] == "encrypt-file" {
 		if len(os.Args) < 4 {
